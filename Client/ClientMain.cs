@@ -33,27 +33,61 @@ namespace ClothingUI.Client {
                 { "Grôles", 6 }
             };
 
-            RegisterCommand("shop", new Action<int, List<object>, string>((source, args, raw) => {
-                Debug.WriteLine("ClothingUI called");
-                var menu = new NativeMenu("Clothing Shop", "Acheter vos vêtements");
-
-                foreach (KeyValuePair<string, int> entry in categories) {
-                    List<int> drawingVariations = new List<int>();
-                    for (int i = 0; i < GetNumberOfPedDrawableVariations(GetPlayerPed(-1), entry.Value); i++)
-                        drawingVariations.Add(i);
-                    List<int> textureVariations = new List<int>();
-                    for (int i = 0; i < GetNumberOfPedTextureVariations(GetPlayerPed(-1), entry.Value, pedVariation); i++)
-                        textureVariations.Add(i);
-                    NativeListItem<int> title = new NativeListItem<int>(entry.Key, drawingVariations.ToArray());
-                    title.ItemChanged += (sender, e) =>
-                     {
-                         // Pool.Remove(menu);
-                         SetPedComponentVariation(GetPlayerPed(-1), entry.Value, pedVariation, pedTexture, 0);
-                     };
-                    menu.Add(title);
+            RegisterCommand("menuskin", new Action<int, List<object>, string>((source, args, raw) => {
+                var cam = CreateCam("DEFAULT_SCRIPTED_CAMERA", true);
+                var coordsCam = GetOffsetFromEntityInWorldCoords(PlayerPedId(), (float)0.0, (float)0.5, (float)0.65);
+                var coordsPly = GetEntityCoords(PlayerPedId(), true);
+                SetCamCoord(cam, coordsCam.X, coordsCam.Y, coordsCam.Z);
+                PointCamAtCoord(cam, coordsPly.X, coordsPly.Y, (float)(coordsPly.Z + 0.65));
+                SetCamActive(cam, true);
+                RenderScriptCams(true, true, 500, true, true);
+                DisplayRadar(false);
+                // RenderScriptCams(false, false, 0, true, true); Grosse erreur de mettre en true
+                var menu = new NativeMenu("Vetements");
+                var hautPedVariations = GetNumberOfPedTextureVariations(GetPlayerPed(-1), 11, 1);
+                var basPedVariations = GetNumberOfPedTextureVariations(GetPlayerPed(-1), 4, 1);
+                var shoesPedVariations = GetNumberOfPedTextureVariations(GetPlayerPed(-1), 6, 1);
+                var hautList = new List<int>();
+                var basList = new List<int>();
+                var shoesList = new List<int>();
+                foreach (int value in Enumerable.Range(1, hautPedVariations))
+                {
+                    hautList.Add(value);
                 }
+                foreach (int value in Enumerable.Range(1, hautPedVariations))
+                {
+                    basList.Add(value);
+                }
+                foreach (int value in Enumerable.Range(1, hautPedVariations))
+                {
+                    shoesList.Add(value);
+                }
+                var listHaut = new NativeListItem<int>("Haut", hautList.ToArray());
+                listHaut.ItemChanged += (sender, e) =>
+                {
+                    SetPedComponentVariation(GetPlayerPed(-1), 11, e.Index - 1, 1, 2);
+                };
+                var listBas = new NativeListItem<int>("Bas", basList.ToArray());
+                listBas.ItemChanged += (sender, e) =>
+                {
+                    SetPedComponentVariation(GetPlayerPed(-1), 4, e.Index - 1, 1, 2);
+                };
+                var listShoes = new NativeListItem<int>("Chaussures", shoesList.ToArray());
+                listShoes.ItemChanged += (sender, e) =>
+                {
+                    SetPedComponentVariation(GetPlayerPed(-1), 6, e.Index - 1, 1, 2);
+                };
+                menu.Add(listHaut);
+                menu.Add(listBas);
+                menu.Add(listShoes);
+                menu.UseMouse = false;
                 Pool.Add(menu);
                 menu.Visible = true;
+                menu.Closing += (sender, e) =>
+                {
+                    RenderScriptCams(false, true, 500, true, true);
+                    DisplayRadar(true);
+                };
             }), false);
         }
 
